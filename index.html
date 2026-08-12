@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @font-face{font-family:"Unica77";src:url("fonts/Unica77LLCyr-Regular.otf") format("opentype");font-weight:400;font-style:normal;}
+  @font-face{font-family:"Unica77";src:url("fonts/Unica77LLCyr-Medium.otf") format("opentype");font-weight:500;font-style:normal;}
+  @font-face{font-family:"Unica77";src:url("fonts/Unica77LLCyr-Bold.otf") format("opentype");font-weight:700;font-style:normal;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{margin:0;background:#fff;}
+  a{color:#2FA84C;}
+  a:hover{color:#238A3B;}
+  .root{background:#fff;padding:0;margin:0;box-sizing:border-box;font-family:"Unica77","Geist",-apple-system,BlinkMacSystemFont,sans-serif;display:block;width:100%;height:100vh;overflow:hidden;}
+  .stage{position:relative;width:100%;aspect-ratio:536/408;max-width:536px;margin:0;padding:0;}
+  .cards-layer{position:absolute;inset:0;transition:opacity .35s ease;}
+  .cards-layer.hidden{opacity:0;pointer-events:none;}
+  .final-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .5s ease;pointer-events:none;margin:0;padding:0;}
+  .final-img.on{opacity:1;}
+  @media(max-width:600px){.stage{aspect-ratio:353/263;}}
+  .card{position:absolute;display:inline-flex;align-items:center;justify-content:center;height:clamp(20px, 5.2vw, 32.5px);width:max-content;max-width:44%;padding:0 clamp(7.5px, 2.5vw, 13.75px);border-radius:7px;font-size:clamp(10px, 3vw, 15px);font-weight:500;letter-spacing:-0.01em;white-space:nowrap;box-sizing:border-box;background:#4CCF67;color:#fff;transform:translate(-50%, -50%) translateX(var(--jx, 0px)) rotate(var(--jr, 0deg));transition:top .7s ease-in,left .7s ease-in,transform .7s ease-in;}
+</style>
+</head>
+<body>
+<div class="root" style="display:flex;align-items:center;justify-content:center;">
+  <div class="stage">
+    <div class="cards-layer" id="cardsLayer">
+      <!-- Cards inserted here -->
+    </div>
+    <img class="final-img" id="finalImg" src="images/shelf.png" alt="Cityo services organized by category">
+  </div>
+</div>
+
+<script>
+const CARDS = {
+  trasteros: 'Storage Units', almacenes: 'Warehouses', parking: 'Parking',
+  mudanzas: 'Moving', recepcion: 'Reception', otros: 'Other Services'
+};
+const ORDER = ['otros', 'parking', 'trasteros', 'recepcion', 'almacenes', 'mudanzas'];
+const POS = {
+  otros: { top: 18, left: 46 }, parking: { top: 11, left: 57 }, trasteros: { top: 27, left: 59 },
+  recepcion: { top: 31, left: 41 }, almacenes: { top: 22, left: 50 }, mudanzas: { top: 15, left: 47 }
+};
+const JITTER = {
+  otros: { jx: 0, jr: -12 }, parking: { jx: 0, jr: 9 }, trasteros: { jx: 0, jr: -6 },
+  recepcion: { jx: 0, jr: 14 }, almacenes: { jx: 0, jr: -18 }, mudanzas: { jx: 0, jr: 5 }
+};
+const EXIT_POS = {
+  otros: { top: -25, left: -10 }, parking: { top: -20, left: 60 }, trasteros: { top: 50, left: 130 },
+  recepcion: { top: 120, left: 20 }, almacenes: { top: 115, left: 80 }, mudanzas: { top: 40, left: -25 }
+};
+const PILE_HOLD = 1800, CARD_FADE = 350, MOVE_MS = 700, GAP_BEFORE_IMG = 250, IMG_FADE = 500, IMAGE_HOLD = 3200, GAP_BEFORE_CARDS = 250;
+
+const cardsLayer = document.getElementById('cardsLayer');
+const finalImg = document.getElementById('finalImg');
+let timers = [];
+
+function createCards() {
+  cardsLayer.innerHTML = '';
+  ORDER.forEach(id => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.textContent = CARDS[id];
+    card.style.top = POS[id].top + '%';
+    card.style.left = POS[id].left + '%';
+    card.style.setProperty('--jx', JITTER[id].jx + 'px');
+    card.style.setProperty('--jr', JITTER[id].jr + 'deg');
+    cardsLayer.appendChild(card);
+  });
+}
+
+function updateCardPositions(exiting) {
+  const cards = cardsLayer.querySelectorAll('.card');
+  cards.forEach((card, i) => {
+    const id = ORDER[i];
+    const pos = exiting ? EXIT_POS[id] : POS[id];
+    card.style.top = pos.top + '%';
+    card.style.left = pos.left + '%';
+  });
+}
+
+function loop() {
+  createCards();
+  cardsLayer.classList.remove('hidden');
+  finalImg.classList.remove('on');
+  
+  timers.push(setTimeout(() => {
+    cardsLayer.classList.add('hidden');
+    updateCardPositions(true);
+    
+    timers.push(setTimeout(() => {
+      finalImg.classList.add('on');
+      
+      timers.push(setTimeout(() => {
+        finalImg.classList.remove('on');
+        
+        timers.push(setTimeout(() => {
+          cardsLayer.classList.remove('hidden');
+          updateCardPositions(false);
+          
+          timers.push(setTimeout(() => {
+            loop();
+          }, CARD_FADE + 60));
+        }, IMG_FADE + GAP_BEFORE_CARDS));
+      }, IMG_FADE + IMAGE_HOLD));
+    }, Math.max(CARD_FADE, MOVE_MS) + GAP_BEFORE_IMG));
+  }, PILE_HOLD));
+}
+
+createCards();
+loop();
+</script>
+</body>
+</html>
